@@ -2,7 +2,13 @@ FROM php:5.6-apache
 MAINTAINER Pierre Cheynier <pierre.cheynier@sfr.com>
 
 ENV PHPIPAM_SOURCE https://github.com/phpipam/phpipam/archive/
-ENV PHPIPAM_VERSION 1.16.003
+ENV PHPIPAM_VERSION 1.2
+
+ENV MYSQL_HOST=localhost
+ENV MYSQL_PORT=3306
+ENV MYSQL_DATABASE_NAME=phpipam
+ENV MYSQL_USERNAME=phpipam
+ENV MYSQL_PASSWORD=phpipamadmin
 
 # Install required deb packages
 RUN apt-get update && \ 
@@ -27,12 +33,21 @@ COPY php.ini /usr/local/etc/php/
 ADD ${PHPIPAM_SOURCE}/${PHPIPAM_VERSION}.tar.gz /tmp/
 RUN	tar -xzf /tmp/${PHPIPAM_VERSION}.tar.gz -C /var/www/html/ --strip-components=1 
 
+RUN mv /var/www/html/config.dist.php /var/www/html/config.php
+
 # Use system environment variables into config.php
 RUN sed -i \ 
-	-e "s/\['host'\] = \"localhost\"/\['host'\] = \"mysql\"/" \ 
-    -e "s/\['user'\] = \"phpipam\"/\['user'\] = \"root\"/" \ 
-    -e "s/\['pass'\] = \"phpipamadmin\"/\['pass'\] = getenv(\"MYSQL_ENV_MYSQL_ROOT_PASSWORD\")/" \ 
+	-e "s/\['host'\] = \"localhost\"/\['host'\] = getenv(\"MYSQL_HOST\")/" \ 
+	-e "s/\['port'\] = 3306/\['port'\] = getenv(\"MYSQL_PORT\")/" \ 
+	-e "s/\['name'\] = \"phpipam\"/\['name'\] = getenv(\"MYSQL_DATABASE_NAME\")/" \ 
+    -e "s/\['user'\] = \"phpipam\"/\['user'\] = getenv(\"MYSQL_USERNAME\")/" \ 
+    -e "s/\['pass'\] = \"phpipamadmin\"/\['pass'\] = getenv(\"MYSQL_PASSWORD\")/" \ 
+    -e "s/\$debugging = false/\$debugging = true/" \
 	/var/www/html/config.php
 
-EXPOSE 80
+# Fix bug that stops it working on MySQL 5.7
+RUN sed -i \
+	-e "s/DEFAULT '0000-00-00 00:00:00'/DEFAULT '1000-01-01 00:00:00'/" \
+	/var/www/html/db/SCHEMA.sql
 
+EXPOSE 80

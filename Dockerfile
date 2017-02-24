@@ -24,6 +24,7 @@ RUN docker-php-ext-configure mysqli --with-mysqli=mysqlnd && \
 	docker-php-ext-configure gmp --with-gmp=/usr/include/x86_64-linux-gnu && \
 	docker-php-ext-install gmp && \
     docker-php-ext-install mcrypt && \
+    docker-php-ext-install pcntl && \
 	echo ". /etc/environment" >> /etc/apache2/envvars && \
 	a2enmod rewrite
 
